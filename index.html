@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Depther Music | Liquid Glass</title>
+	<link rel="manifest" href="manifest.json">
+<script>
+if ('serviceWorker' in navigator) {
+	window.addEventListener('load', () => {
+	navigator.serviceWorker.register('sw.js').then(registration => {
+	console.log('ServiceWorker registration successful with scope: ', registration.scope);
+	}, err => {
+	console.log('ServiceWorker registration failed: ', err);
+	}).catch(err => {
+	console.log(err)
+	});
+	});
+}
+</script>
+    
+    
+    
+
+    <!-- Google Fonts: Google Sans Flex -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,GRAD,ROND@6..144,76.6,600,100,100&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- QRCode.js for Pair generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Import Map for Material Web & Color Utilities -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@material/web/": "https://esm.run/@material/web/",
+            "@material/material-color-utilities": "https://esm.run/@material/material-color-utilities"
+        }
+    }
+    </script>
+
+    <style>
+        /* * =========================================
+         * 1. CSS Variables & Material Design Tokens
+         * =========================================
+         */
+        :root {
+            /* Base Colors (Will be overridden by JS / Monet) */
+            --md-sys-color-primary: #6750a4;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #eaddff;
+            --md-sys-color-on-primary-container: #21005d;
+            --md-sys-color-secondary: #625b71;
+            --md-sys-color-on-secondary: #ffffff;
+            --md-sys-color-secondary-container: #e8def8;
+            --md-sys-color-on-secondary-container: #1d192b;
+            --md-sys-color-tertiary: #7d5260;
+            --md-sys-color-on-tertiary: #ffffff;
+            --md-sys-color-tertiary-container: #ffd8e4;
+            --md-sys-color-on-tertiary-container: #31111d;
+            --md-sys-color-error: #b3261e;
+            --md-sys-color-on-error: #ffffff;
+            --md-sys-color-error-container: #f9dedc;
+            --md-sys-color-on-error-container: #410e0b;
+            --md-sys-color-background: #fffbfe;
+            --md-sys-color-on-background: #1c1b1f;
+            --md-sys-color-surface: #fffbfe;
+            --md-sys-color-on-surface: #1c1b1f;
+            --md-sys-color-surface-variant: #e7e0ec;
+            --md-sys-color-on-surface-variant: #49454f;
+            --md-sys-color-outline: #79747e;
+            --md-sys-color-outline-variant: #c4c7c5;
+            --md-sys-color-inverse-surface: #313033;
+            --md-sys-color-inverse-on-surface: #f4f0f4;
+            --md-sys-color-inverse-primary: #d0bcff;
+            
+            /* Typography */
+            --md-ref-typeface-brand: 'Google Sans Flex', sans-serif;
+            --md-ref-typeface-plain: 'Google Sans Flex', sans-serif;
+
+            /* Liquid Glass Extensions */
+            --glass-blur: 24px;
+            --glass-opacity-light: 0.7;
+            --glass-opacity-dark: 0.6;
+            --glass-border-opacity: 0.1;
+            
+            /* Animation Curves */
+            --m3-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+            --m3-easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+            --transition-duration: 0.4s;
+        }
+
+        /* 文字コピー禁止とフォント設定 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Google Sans Flex", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 600;
+            font-style: normal;
+            font-variation-settings: "slnt" 0, "wdth" 76.6, "GRAD" 100, "ROND" 100;
+            background-color: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+            transition: background-color var(--transition-duration), color var(--transition-duration);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            
+            /* 文字コピー禁止 */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* * =========================================
+         * 2. Background & Fluid Mesh (Material Depth)
+         * =========================================
+         */
+        .fluid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            filter: blur(80px);
+            opacity: 0.5;
+            transition: opacity 0.5s;
+            pointer-events: none;
+        }
+
+        .fluid-blob {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--md-sys-color-primary-container);
+            mix-blend-mode: multiply;
+            animation: moveBlob 25s infinite alternate;
+            opacity: 0.6;
+        }
+
+        .fluid-blob:nth-child(2) {
+            background: var(--md-sys-color-secondary-container);
+            width: 500px;
+            height: 500px;
+            left: 10%;
+            top: 20%;
+            animation-duration: 30s;
+            animation-delay: -5s;
+        }
+
+        .fluid-blob:nth-child(3) {
+            background: var(--md-sys-color-tertiary-container);
+            width: 400px;
+            height: 400px;
+            right: 15%;
+            bottom: 10%;
+            animation-duration: 20s;
+            animation-delay: -2s;
+        }
+
+        @keyframes moveBlob {
+            0% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(10vw, 20vh) scale(1.2); }
+            66% { transform: translate(-10vw, 10vh) scale(0.8); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        /* WindowLevelBlur Background */
+        #window-level-blur-bg {
+            position: fixed;
+            top: -10%; left: -10%;
+            width: 120vw; height: 120vh;
+            z-index: -2;
+            background-size: cover;
+            background-position: center;
+            filter: blur(40px) brightness(0.7);
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+        #window-level-blur-bg.active {
+            opacity: 1;
+        }
+
+        /* * =========================================
+         * 3. Header & Navigation (Liquid Glass)
+         * =========================================
+         */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            height: 64px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-bottom: 1px solid rgba(128, 128, 128, var(--glass-border-opacity));
+            transition: background-color 0.3s;
+        }
+
+        header h1 {
+            margin: 0;
+            font-family: var(--md-ref-typeface-brand);
+            font-size: 20px;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+        }
+
+        /* * =========================================
+         * 4. Floating Tab Bar (Expressive Component)
+         * =========================================
+         */
+        .floating-nav-container {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: auto;
+            max-width: 95vw;
+        }
+
+        .custom-nav {
+            display: flex;
+            align-items: center;
+            background-color: rgba(var(--md-sys-color-surface-rgb, 255, 255, 255), var(--glass-opacity-light));
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            padding: 8px;
+            border-radius: 32px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s var(--m3-easing-emphasized);
+        }
+
+        body.dark-mode .custom-nav {
+            background-color: rgba(30, 30, 30, var(--glass-opacity-dark));
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 64px;
+            height: 48px;
+            cursor: pointer;
+            border-radius: 24px;
+            transition: all 0.2s var(--m3-easing-standard);
+        }
+
+        .nav-icon-container {
+            width: 48px;
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px;
+            transition: background-color 0.3s var(--m3-easing-standard);
+        }
+
+        .nav-item .material-symbols-outlined {
+            font-size: 24px;
+            font-variation-settings: 'FILL' 0, 'wght' 400;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 2px;
+            color: var(--md-sys-color-on-surface-variant);
+            display: none; /* 省スペースのため通常非表示 */
+        }
+
+        .nav-item.active .nav-icon-container {
+            background-color: var(--md-sys-color-secondary-container);
+        }
+
+        .nav-item.active .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .nav-item:hover .nav-icon-container {
+            background-color: rgba(var(--md-sys-color-on-surface-rgb), 0.08);
+        }
+
+        @media (min-width: 900px) {
+            .floating-nav-container {
+                left: 24px;
+                bottom: auto;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            .custom-nav {
+                flex-direction: column;
+                border-radius: 24px;
+                padding: 12px 8px;
+            }
+            .nav-item {
+                margin: 4px 0;
+            }
+            body { margin-left: 100px; }
+        }
+
+        /* * =========================================
+         * 5. Layout & Sections
+         * =========================================
+         */
+        main {
+            flex: 1;
+            padding: 24px 16px 120px 16px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .view-section {
+            display: none;
+            animation: m3-fade-in 0.5s var(--m3-easing-emphasized) forwards;
+        }
+        .view-section.active { display: block; }
+
+        @keyframes m3-fade-in {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .glass-card {
+            background-color: rgba(var(--md-sys-color-surface-rgb), var(--glass-opacity-light));
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s var(--m3-easing-standard), box-shadow 0.3s;
+        }
+
+        body.dark-mode .glass-card {
+            background-color: rgba(30, 30, 30, var(--glass-opacity-dark));
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-family: var(--md-ref-typeface-brand);
+            font-size: 22px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--md-sys-color-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* * =========================================
+         * 6. Specialized UI Elements (Depther Music)
+         * =========================================
+         */
+        /* Custom Inputs */
+        md-filled-button, md-elevated-button, md-outlined-button {
+            --md-filled-button-container-shape: 16px;
+            margin: 4px;
+        }
+        md-outlined-text-field, md-filled-text-field { width: 100%; margin-bottom: 16px; }
+        md-slider { width: 100%; }
+
+        /* Loading Overlay (Off by default as requested) */
+        #loading-overlay { display: none; }
+
+        /* Track List Item */
+        .track-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            gap: 16px;
+        }
+        .track-item:hover {
+            background: rgba(var(--md-sys-color-primary-rgb), 0.1);
+        }
+        .track-cover-small {
+            width: 48px; height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: var(--md-sys-color-surface-variant);
+        }
+        .track-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .track-title {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--md-sys-color-on-surface);
+        }
+        .track-artist {
+            font-size: 14px;
+            opacity: 0.7;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        /* Now Playing View Specifics */
+        .now-playing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 24px 0;
+        }
+        .album-art-large {
+            width: 280px;
+            height: 280px;
+            border-radius: 32px;
+            object-fit: cover;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            margin-bottom: 32px;
+            background: var(--md-sys-color-surface-variant);
+            transition: transform 0.3s var(--m3-easing-emphasized);
+        }
+        .album-art-large:active {
+            transform: scale(0.95);
+        }
+        .np-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            color: var(--md-sys-color-on-surface);
+        }
+        .np-artist {
+            font-size: 18px;
+            margin: 0 0 24px 0;
+            color: var(--md-sys-color-primary);
+        }
+        .np-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+            width: 100%;
+        }
+        /* 太めの横長丸ボタン (Play Button) */
+        .btn-play-massive {
+            --md-filled-button-container-shape: 32px;
+            --md-filled-button-container-height: 64px;
+            width: 140px;
+            font-size: 20px;
+        }
+        
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: -8px;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
+
+        /* Fab button right bottom relative to container */
+        .upload-fab-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        /* Settings Item */
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(var(--md-sys-color-outline-rgb), 0.2);
+        }
+        .settings-item:last-child { border-bottom: none; }
+        
+        /* QR Code Container */
+        #qrcode-container img {
+            border-radius: 16px;
+            margin: 16px auto;
+        }
+    </style>
+</head>
+<body class="light-mode">
+
+    <!-- Loading Overlay (Off by default) -->
+    <div id="loading-overlay"></div>
+
+    <!-- Liquid Animated Background (M3 Background) -->
+    <div class="fluid-background" id="m3-fluid-bg">
+        <div class="fluid-blob"></div>
+        <div class="fluid-blob" style="width:600px; height:600px; right: -100px; top: -100px;"></div>
+        <div class="fluid-blob"></div>
+    </div>
+
+    <!-- WindowLevelBlur Background (Jacket Cover Blur) -->
+    <div id="window-level-blur-bg"></div>
+
+    <!-- Top App Bar -->
+    <header>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <md-icon-button><span class="material-symbols-outlined">graphic_eq</span></md-icon-button>
+            <h1>Depther Music</h1>
+        </div>
+        <div style="display:flex; align-items:center; gap: 8px;">
+            <input type="color" id="source-color-picker" value="#6750a4" style="width:0; height:0; visibility:hidden; position:absolute;">
+            <md-icon-button onclick="window.switchTab('settings')">
+                <span class="material-symbols-outlined">settings</span>
+            </md-icon-button>
+        </div>
+    </header>
+
+    <main>
+        <!-- VIEW: HOME -->
+        <section id="view-home" class="view-section active">
+            <div class="glass-card">
+                <div class="section-title">
+                    <span class="material-symbols-outlined">auto_awesome</span>
+                    おすすめ
+                </div>
+                <div id="home-recommendations" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Auto populated -->
+                    <p style="opacity:0.7;">ライブラリからおすすめの曲がここに表示されます。</p>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="section-title">
+                    <span class="material-symbols-outlined">today</span>
+                    今日のプレイリスト
+                </div>
+                <div id="home-today-playlist" style="display:flex; flex-direction:column; gap:8px;">
+                    <p style="opacity:0.7;">プレイリストを作成しましょう。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: SEARCH -->
+        <section id="view-search" class="view-section">
+            <div class="glass-card">
+                <md-outlined-text-field id="search-input" label="曲名、アーティスト名で検索">
+                    <md-icon slot="leading-icon"><span class="material-symbols-outlined">search</span></md-icon>
+                </md-outlined-text-field>
+                
+                <div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:8px;">
+                    <md-filter-chip label="すべて" selected onclick="filterSearch('all')"></md-filter-chip>
+                    <md-filter-chip label="アーティスト" onclick="filterSearch('artist')"></md-filter-chip>
+                    <md-filter-chip label="ジャンル" onclick="filterSearch('genre')"></md-filter-chip>
+                </div>
+
+                <div id="search-results" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- Search Results here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: LIBRARY -->
+        <section id="view-library" class="view-section">
+            <div class="glass-card">
+                <div class="section-title" style="justify-content: space-between;">
+                    <span><span class="material-symbols-outlined" style="vertical-align:middle; margin-right:8px;">library_music</span>ライブラリ</span>
+                    <md-icon-button onclick="document.getElementById('file-upload').click()"><span class="material-symbols-outlined">add</span></md-icon-button>
+                </div>
+                <input type="file" id="file-upload" accept="audio/*" multiple style="display:none;" onchange="handleFileUpload(event)">
+                
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <md-text-button onclick="showPlaylistsDialog()">プレイリスト管理</md-text-button>
+                </div>
+
+                <div id="library-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="text-align:center; padding: 32px; opacity: 0.6;">
+                        <span class="material-symbols-outlined" style="font-size: 48px;">music_note</span>
+                        <p>右上の＋ボタンから音楽を追加してください。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: NOW PLAYING -->
+        <section id="view-playing" class="view-section">
+            <div class="glass-card now-playing-container">
+                <img id="np-cover" class="album-art-large" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><rect width='280' height='280' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='48' fill='%23666'>No Cover</text></svg>">
+                
+                <h2 id="np-title" class="np-title">選択されていません</h2>
+                <p id="np-artist" class="np-artist">-</p>
+
+                <div style="width: 100%; padding: 0 16px; box-sizing: border-box;">
+                    <md-slider id="np-slider" min="0" max="100" value="0"></md-slider>
+                    <div class="time-display">
+                        <span id="np-time-current">0:00</span>
+                        <span id="np-time-total">0:00</span>
+                    </div>
+                </div>
+
+                <div class="np-controls">
+                    <md-icon-button onclick="playPrevious()"><span class="material-symbols-outlined">skip_previous</span></md-icon-button>
+                    <!-- 太めの横長丸ボタン -->
+                    <md-filled-button id="np-play-btn" class="btn-play-massive" onclick="togglePlay()">
+                        <md-icon slot="icon"><span id="np-play-icon" class="material-symbols-outlined">play_arrow</span></md-icon>
+                        <span id="np-play-text" style="margin-left:8px;">Play</span>
+                    </md-filled-button>
+                    <md-icon-button onclick="playNext()"><span class="material-symbols-outlined">skip_next</span></md-icon-button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: PEER -->
+        <section id="view-peer" class="view-section">
+            <div class="glass-card">
+                <div class="section-title">
+                    <span class="material-symbols-outlined">leak_add</span>
+                    Peer🍐 ペアリング
+                </div>
+                <p style="opacity:0.8; font-size:14px;">別デバイスとペアリングして互いの曲を参照・再生できます。</p>
+                
+                <div style="margin: 24px 0; text-align: center;">
+                    <p style="font-weight:bold; margin-bottom:8px;">あなたのID</p>
+                    <div style="background:rgba(0,0,0,0.1); padding:12px; border-radius:16px; font-family:monospace; user-select:text!important;-webkit-user-select:text!important;" id="my-peer-id">生成中...</div>
+                    <div id="qrcode-container" style="display:flex; justify-content:center; margin-top:16px;"></div>
+                </div>
+
+                <md-outlined-text-field id="peer-target-id" label="接続先IDを入力">
+                    <md-icon slot="leading-icon"><span class="material-symbols-outlined">devices</span></md-icon>
+                </md-outlined-text-field>
+                <div style="display:flex; justify-content: flex-end;">
+                    <md-filled-button onclick="connectToPeer()">接続する</md-filled-button>
+                </div>
+            </div>
+
+            <div class="glass-card" id="peer-library-card" style="display:none;">
+                <div class="section-title">ペアリング先のライブラリ</div>
+                <div id="peer-library-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+        </section>
+
+        <!-- VIEW: SETTINGS -->
+        <section id="view-settings" class="view-section">
+            <div class="glass-card">
+                <div class="section-title">
+                    <span class="material-symbols-outlined">settings</span>
+                    設定
+                </div>
+                
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight:600;">WindowLevelBlur 背景</div>
+                        <div style="font-size:12px; opacity:0.7;">再生画面の背景をジャケットカバーのぼかしにする</div>
+                    </div>
+                    <md-switch id="setting-blur-bg" icons></md-switch>
+                </div>
+                
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight:600;">テーマカラーの同期</div>
+                        <div style="font-size:12px; opacity:0.7;">ペアリング時にMaterial 3カラーを同期する</div>
+                    </div>
+                    <md-switch id="setting-sync-color" icons checked></md-switch>
+                </div>
+                
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight:600;">テーマカラー変更</div>
+                        <div style="font-size:12px; opacity:0.7;">アプリ全体のアクセントカラー</div>
+                    </div>
+                    <md-icon-button onclick="document.getElementById('source-color-picker').click()">
+                        <span class="material-symbols-outlined">palette</span>
+                    </md-icon-button>
+                </div>
+                
+                <div class="settings-item">
+                    <div>
+                        <div style="font-weight:600;">ダークモード</div>
+                    </div>
+                    <md-switch id="setting-dark-mode" icons onchange="window.toggleDarkMode()"></md-switch>
+                </div>
+                
+                <div style="margin-top:24px;">
+                    <div style="font-weight:600; margin-bottom:8px;">フルバックアップ & リストア (ZIP)</div>
+                    <div style="display:flex; gap:16px;">
+                        <md-filled-button onclick="exportBackup()"><md-icon slot="icon"><span class="material-symbols-outlined">download</span></md-icon>バックアップ</md-filled-button>
+                        <md-outlined-button onclick="document.getElementById('restore-upload').click()"><md-icon slot="icon"><span class="material-symbols-outlined">upload</span></md-icon>リストア</md-outlined-button>
+                        <input type="file" id="restore-upload" accept=".zip" style="display:none;" onchange="importBackup(event)">
+                    </div>
+                </div>
+                <div style="margin-top:24px; text-align:center;">
+                     <md-text-button style="--md-text-button-label-text-color: var(--md-sys-color-error);" onclick="clearDatabase()">全データ削除</md-text-button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating Navigation Bar -->
+    <div class="floating-nav-container">
+        <nav class="custom-nav">
+            <div class="nav-item active" id="nav-home" onclick="window.switchTab('home')">
+                <div class="nav-icon-container"><span class="material-symbols-outlined">home</span></div>
+                <span class="nav-label">ホーム</span>
+            </div>
+            <div class="nav-item" id="nav-search" onclick="window.switchTab('search')">
+                <div class="nav-icon-container"><span class="material-symbols-outlined">search</span></div>
+                <span class="nav-label">検索</span>
+            </div>
+            <div class="nav-item" id="nav-library" onclick="window.switchTab('library')">
+                <div class="nav-icon-container"><span class="material-symbols-outlined">library_music</span></div>
+                <span class="nav-label">ライブラリ</span>
+            </div>
+            <div class="nav-item" id="nav-playing" onclick="window.switchTab('playing')">
+                <div class="nav-icon-container"><span class="material-symbols-outlined">play_circle</span></div>
+                <span class="nav-label">再生</span>
+            </div>
+            <div class="nav-item" id="nav-peer" onclick="window.switchTab('peer')">
+                <div class="nav-icon-container"><span class="material-symbols-outlined">sensors</span></div>
+                <span class="nav-label">Peer</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="main-audio"></audio>
+
+    <!-- Scripts -->
+    <script type="module">
+        import '@material/web/all.js';
+        import { argbFromHex, themeFromSourceColor, hexFromArgb } from "@material/material-color-utilities";
+
+        // ==========================================
+        // --- 1. Global State & Initialization ---
+        // ==========================================
+        let isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        let currentSourceColor = '#6750a4';
+        
+        // Dexie DB Setup
+        const db = new Dexie("DeptherMusicDB");
+        db.version(1).stores({
+            tracks: 'id, title, artist, album', // file and cover are also stored but not indexed
+            settings: 'key',
+            playlists: 'id, name' // trackIds array is stored
+        });
+
+        // Audio Player State
+        const audio = document.getElementById('main-audio');
+        let currentPlaylist = [];
+        let currentIndex = -1;
+        let isPlaying = false;
+
+        // PeerJS State
+        let peer = null;
+        let peerConn = null;
+        let myPeerId = null;
+
+        // ==========================================
+        // --- 2. Dynamic Color Engine (MWC Protocol) ---
+        // ==========================================
+        window.updateTheme = async function(hexColor, syncToPeer = true) {
+            currentSourceColor = hexColor;
+            
+            // Convert and Generate
+            const argb = argbFromHex(hexColor);
+            const theme = themeFromSourceColor(argb);
+            const scheme = isDarkMode ? theme.schemes.dark : theme.schemes.light;
+            const root = document.documentElement;
+            
+            const tokens = {
+                'primary': scheme.primary, 'on-primary': scheme.onPrimary,
+                'primary-container': scheme.primaryContainer, 'on-primary-container': scheme.onPrimaryContainer,
+                'secondary': scheme.secondary, 'on-secondary': scheme.onSecondary,
+                'secondary-container': scheme.secondaryContainer, 'on-secondary-container': scheme.onSecondaryContainer,
+                'tertiary': scheme.tertiary, 'on-tertiary': scheme.onTertiary,
+                'tertiary-container': scheme.tertiaryContainer, 'on-tertiary-container': scheme.onTertiaryContainer,
+                'error': scheme.error, 'on-error': scheme.onError,
+                'error-container': scheme.errorContainer, 'on-error-container': scheme.onErrorContainer,
+                'background': scheme.background, 'on-background': scheme.onBackground,
+                'surface': scheme.surface, 'on-surface': scheme.onSurface,
+                'surface-variant': scheme.surfaceVariant, 'on-surface-variant': scheme.onSurfaceVariant,
+                'outline': scheme.outline, 'outline-variant': scheme.outlineVariant,
+            };
+
+            for (const [key, value] of Object.entries(tokens)) {
+                const hex = hexFromArgb(value);
+                root.style.setProperty(`--md-sys-color-${key}`, hex);
+                const r = (value >> 16) & 0xff;
+                const g = (value >> 8) & 0xff;
+                const b = value & 0xff;
+                root.style.setProperty(`--md-sys-color-${key}-rgb`, `${r}, ${g}, ${b}`);
+            }
+
+            const picker = document.getElementById('source-color-picker');
+            if(picker) picker.value = hexColor;
+
+            // Save to DB
+            await db.settings.put({key: 'themeColor', value: hexColor});
+
+            // Sync to Peer if enabled
+            if (syncToPeer && peerConn && document.getElementById('setting-sync-color').selected) {
+                peerConn.send({ type: 'sync_color', color: hexColor });
+            }
+        };
+
+        window.toggleDarkMode = async function() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            const sw = document.getElementById('setting-dark-mode');
+            if(sw) sw.selected = isDarkMode;
+            window.updateTheme(currentSourceColor);
+            await db.settings.put({key: 'darkMode', value: isDarkMode});
+        };
+
+        // ==========================================
+        // --- Navigation ---
+        // ==========================================
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            const targetView = document.getElementById('view-' + tabId);
+            if(targetView) targetView.classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            const targetNav = document.getElementById('nav-' + tabId);
+            if(targetNav) targetNav.classList.add('active');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            if(tabId === 'library') loadLibrary();
+            if(tabId === 'home') loadHome();
+        };
+
+        // ==========================================
+        // --- Initialization ---
+        // ==========================================
+        window.addEventListener('load', async () => {
+            // Load Settings
+            const savedColor = await db.settings.get('themeColor');
+            if (savedColor) currentSourceColor = savedColor.value;
+            
+            const savedDark = await db.settings.get('darkMode');
+            if (savedDark !== undefined) {
+                isDarkMode = savedDark.value;
+                document.getElementById('setting-dark-mode').selected = isDarkMode;
+            }
+            if(isDarkMode) document.body.classList.add('dark-mode');
+
+            const blurSetting = await db.settings.get('windowBlur');
+            const blurSwitch = document.getElementById('setting-blur-bg');
+            if (blurSetting !== undefined && blurSwitch) {
+                blurSwitch.selected = blurSetting.value;
+            }
+            blurSwitch.addEventListener('change', async (e) => {
+                await db.settings.put({key: 'windowBlur', value: e.target.selected});
+                updateBackground();
+            });
+
+            const syncSetting = await db.settings.get('syncColor');
+            const syncSwitch = document.getElementById('setting-sync-color');
+            if (syncSetting !== undefined && syncSwitch) {
+                syncSwitch.selected = syncSetting.value;
+            }
+            syncSwitch.addEventListener('change', async (e) => {
+                await db.settings.put({key: 'syncColor', value: e.target.selected});
+            });
+
+            window.updateTheme(currentSourceColor, false);
+            loadLibrary();
+            loadHome();
+            initAudioEvents();
+            initPeer();
+        });
+
+        document.getElementById('source-color-picker').addEventListener('input', (e) => {
+            window.updateTheme(e.target.value);
+        });
+
+        // Fluid background movement
+        window.addEventListener('mousemove', (e) => {
+            if(document.getElementById('window-level-blur-bg').classList.contains('active')) return;
+            const x = (e.clientX / window.innerWidth - 0.5) * 40;
+            const y = (e.clientY / window.innerHeight - 0.5) * 40;
+            const blobs = document.querySelectorAll('.fluid-blob');
+            blobs.forEach((b, i) => {
+                b.style.transform = `translate(${x * (i+1)}px, ${y * (i+1)}px)`;
+            });
+        });
+
+        // ==========================================
+        // --- Media / Audio Logic ---
+        // ==========================================
+        window.handleFileUpload = async function(event) {
+            const files = event.target.files;
+            if (!files.length) return;
+            
+            for (let file of files) {
+                await processAudioFile(file);
+            }
+            loadLibrary();
+        };
+
+        function processAudioFile(file) {
+            return new Promise((resolve) => {
+                window.jsmediatags.read(file, {
+                    onSuccess: async function(tag) {
+                        let coverBase64 = null;
+                        if (tag.tags.picture) {
+                            const data = tag.tags.picture.data;
+                            const format = tag.tags.picture.format;
+                            let base64String = "";
+                            for (let i = 0; i < data.length; i++) {
+                                base64String += String.fromCharCode(data[i]);
+                            }
+                            coverBase64 = `data:${format};base64,${window.btoa(base64String)}`;
+                        }
+                        
+                        const track = {
+                            id: crypto.randomUUID(),
+                            title: tag.tags.title || file.name.replace(/\.[^/.]+$/, ""),
+                            artist: tag.tags.artist || "Unknown Artist",
+                            album: tag.tags.album || "Unknown Album",
+                            genre: tag.tags.genre || "Unknown Genre",
+                            cover: coverBase64,
+                            file: file
+                        };
+                        await db.tracks.put(track);
+                        resolve();
+                    },
+                    onError: async function(error) {
+                        console.log(error);
+                        // Fallback
+                        const track = {
+                            id: crypto.randomUUID(),
+                            title: file.name.replace(/\.[^/.]+$/, ""),
+                            artist: "Unknown",
+                            album: "Unknown",
+                            cover: null,
+                            file: file
+                        };
+                        await db.tracks.put(track);
+                        resolve();
+                    }
+                });
+            });
+        }
+
+        async function loadLibrary() {
+            const tracks = await db.tracks.toArray();
+            const listEl = document.getElementById('library-list');
+            listEl.innerHTML = '';
+            
+            if (tracks.length === 0) {
+                listEl.innerHTML = `<div style="text-align:center; padding: 32px; opacity: 0.6;"><span class="material-symbols-outlined" style="font-size: 48px;">music_note</span><p>右上の＋ボタンから音楽を追加してください。</p></div>`;
+                return;
+            }
+
+            tracks.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = 'track-item glass-card';
+                item.style.marginBottom = '8px';
+                item.style.padding = '8px 16px';
+                
+                const coverSrc = track.cover || `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><rect width='48' height='48' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='24' fill='%23666'>🎵</text></svg>`;
+                
+                item.innerHTML = `
+                    <img src="${coverSrc}" class="track-cover-small">
+                    <div class="track-info">
+                        <div class="track-title">${escapeHTML(track.title)}</div>
+                        <div class="track-artist">${escapeHTML(track.artist)}</div>
+                    </div>
+                    <md-icon-button onclick="event.stopPropagation(); deleteTrack('${track.id}')"><span class="material-symbols-outlined">delete</span></md-icon-button>
+                `;
+                item.onclick = () => {
+                    currentPlaylist = tracks;
+                    playTrack(index);
+                    window.switchTab('playing');
+                };
+                listEl.appendChild(item);
+            });
+            
+            // Search init
+            document.getElementById('search-input').addEventListener('input', (e) => filterSearch(e.target.value));
+        }
+        
+        window.deleteTrack = async function(id) {
+            await db.tracks.delete(id);
+            loadLibrary();
+            loadHome();
+        };
+
+        window.playTrack = function(index) {
+            if(index < 0 || index >= currentPlaylist.length) return;
+            currentIndex = index;
+            const track = currentPlaylist[index];
+            
+            // Reset Audio source
+            audio.pause();
+            
+            if(track.file instanceof File || track.file instanceof Blob) {
+                audio.src = URL.createObjectURL(track.file);
+            } else if (typeof track.file === 'string') {
+                audio.src = track.file; // For Peer streaming url
+            }
+            
+            audio.load();
+            audio.play().then(() => {
+                isPlaying = true;
+                updateNPView(track);
+                setupMediaSession(track);
+            }).catch(e => console.error("Playback failed:", e));
+        };
+
+        window.togglePlay = function() {
+            if(!audio.src) return;
+            if(isPlaying) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
+            isPlaying = !isPlaying;
+            updatePlayButton();
+        };
+
+        window.playNext = function() {
+            if (currentIndex < currentPlaylist.length - 1) {
+                playTrack(currentIndex + 1);
+            } else {
+                playTrack(0); // loop
+            }
+        };
+
+        window.playPrevious = function() {
+            if (audio.currentTime > 3) {
+                audio.currentTime = 0;
+            } else if (currentIndex > 0) {
+                playTrack(currentIndex - 1);
+            } else {
+                playTrack(currentPlaylist.length - 1);
+            }
+        };
+
+        function updateNPView(track) {
+            document.getElementById('np-title').textContent = track.title;
+            document.getElementById('np-artist').textContent = track.artist;
+            
+            const coverSrc = track.cover || `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='280' height='280'><rect width='280' height='280' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='48' fill='%23666'>🎵</text></svg>`;
+            document.getElementById('np-cover').src = coverSrc;
+            
+            // Background update
+            updateBackground(coverSrc);
+            updatePlayButton();
+        }
+
+        function updatePlayButton() {
+            const icon = document.getElementById('np-play-icon');
+            const text = document.getElementById('np-play-text');
+            if (isPlaying) {
+                icon.textContent = 'pause';
+                text.textContent = 'Pause';
+            } else {
+                icon.textContent = 'play_arrow';
+                text.textContent = 'Play';
+            }
+        }
+
+        async function updateBackground(coverSrc = null) {
+            const blurSwitch = document.getElementById('setting-blur-bg');
+            const blurBg = document.getElementById('window-level-blur-bg');
+            const m3Bg = document.getElementById('m3-fluid-bg');
+            
+            if (blurSwitch && blurSwitch.selected) {
+                if(coverSrc && !coverSrc.startsWith('data:image/svg')) {
+                    blurBg.style.backgroundImage = `url(${coverSrc})`;
+                }
+                blurBg.classList.add('active');
+                m3Bg.style.opacity = '0';
+            } else {
+                blurBg.classList.remove('active');
+                m3Bg.style.opacity = '0.5';
+            }
+        }
+
+        function initAudioEvents() {
+            const slider = document.getElementById('np-slider');
+            const timeCur = document.getElementById('np-time-current');
+            const timeTot = document.getElementById('np-time-total');
+            
+            let isDragging = false;
+
+            audio.addEventListener('timeupdate', () => {
+                if(!isDragging && audio.duration) {
+                    const percent = (audio.currentTime / audio.duration) * 100;
+                    slider.value = percent;
+                    timeCur.textContent = formatTime(audio.currentTime);
+                }
+            });
+
+            audio.addEventListener('loadedmetadata', () => {
+                timeTot.textContent = formatTime(audio.duration);
+            });
+
+            audio.addEventListener('ended', playNext);
+
+            slider.addEventListener('pointerdown', () => { isDragging = true; });
+            slider.addEventListener('pointerup', () => { isDragging = false; });
+            slider.addEventListener('change', (e) => {
+                if(audio.duration) {
+                    audio.currentTime = (e.target.value / 100) * audio.duration;
+                }
+            });
+        }
+
+        function formatTime(seconds) {
+            if(isNaN(seconds)) return "0:00";
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function setupMediaSession(track) {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: track.title,
+                    artist: track.artist,
+                    album: track.album,
+                    artwork: track.cover ? [
+                        { src: track.cover, sizes: '512x512', type: 'image/png' } // roughly
+                    ] : []
+                });
+                navigator.mediaSession.setActionHandler('play', togglePlay);
+                navigator.mediaSession.setActionHandler('pause', togglePlay);
+                navigator.mediaSession.setActionHandler('previoustrack', playPrevious);
+                navigator.mediaSession.setActionHandler('nexttrack', playNext);
+            }
+        }
+
+        // ==========================================
+        // --- Search & Home Logic ---
+        // ==========================================
+        window.filterSearch = async function(modeOrQuery) {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const tracks = await db.tracks.toArray();
+            const resEl = document.getElementById('search-results');
+            resEl.innerHTML = '';
+            
+            const filtered = tracks.filter(t => 
+                t.title.toLowerCase().includes(q) || 
+                t.artist.toLowerCase().includes(q)
+            );
+
+            if(filtered.length === 0) {
+                resEl.innerHTML = '<p style="text-align:center; opacity:0.6;">見つかりませんでした。</p>';
+                return;
+            }
+
+            filtered.forEach((track, i) => {
+                const item = document.createElement('div');
+                item.className = 'track-item glass-card';
+                item.style.marginBottom = '4px';
+                item.style.padding = '8px 16px';
+                const coverSrc = track.cover || `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><rect width='48' height='48' fill='%23ccc'/></svg>`;
+                item.innerHTML = `
+                    <img src="${coverSrc}" class="track-cover-small">
+                    <div class="track-info">
+                        <div class="track-title">${escapeHTML(track.title)}</div>
+                        <div class="track-artist">${escapeHTML(track.artist)}</div>
+                    </div>
+                `;
+                item.onclick = () => {
+                    currentPlaylist = filtered;
+                    playTrack(i);
+                    window.switchTab('playing');
+                };
+                resEl.appendChild(item);
+            });
+        }
+
+        async function loadHome() {
+            const tracks = await db.tracks.toArray();
+            const recEl = document.getElementById('home-recommendations');
+            recEl.innerHTML = '';
+            if(tracks.length > 0) {
+                // Random 3 tracks
+                const shuffled = tracks.sort(() => 0.5 - Math.random()).slice(0, 3);
+                shuffled.forEach((t, i) => {
+                    const el = document.createElement('div');
+                    el.className = 'track-item';
+                    el.innerHTML = `
+                        <img src="${t.cover || 'data:image/svg+xml;utf8,<svg width=48 height=48><rect width=48 height=48 fill=%22%23ccc%22/></svg>'}" class="track-cover-small">
+                        <div class="track-info">
+                            <div class="track-title">${escapeHTML(t.title)}</div><div class="track-artist">${escapeHTML(t.artist)}</div>
+                        </div>`;
+                    el.onclick = () => { currentPlaylist = shuffled; playTrack(i); window.switchTab('playing'); };
+                    recEl.appendChild(el);
+                });
+            } else {
+                recEl.innerHTML = '<p style="opacity:0.7;">ライブラリからおすすめの曲がここに表示されます。</p>';
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag]));
+        }
+
+        // ==========================================
+        // --- PeerJS Logic ---
+        // ==========================================
+        function initPeer() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                myPeerId = id;
+                document.getElementById('my-peer-id').textContent = id;
+                
+                // Generate QR
+                const qrContainer = document.getElementById('qrcode-container');
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: id,
+                    width: 128,
+                    height: 128,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            });
+
+            peer.on('connection', (conn) => {
+                peerConn = conn;
+                setupPeerConnection(conn);
+            });
+        }
+
+        window.connectToPeer = function() {
+            const targetId = document.getElementById('peer-target-id').value;
+            if(!targetId) return;
+            const conn = peer.connect(targetId);
+            peerConn = conn;
+            setupPeerConnection(conn);
+        };
+
+        function setupPeerConnection(conn) {
+            conn.on('open', () => {
+                alert('ピアリング成功！');
+                document.getElementById('peer-library-card').style.display = 'block';
+                // Request track list
+                conn.send({ type: 'request_list' });
+                
+                // Sync color if enabled
+                if(document.getElementById('setting-sync-color').selected) {
+                    conn.send({ type: 'sync_color', color: currentSourceColor });
+                }
+            });
+
+            conn.on('data', async (data) => {
+                if (data.type === 'request_list') {
+                    const tracks = await db.tracks.toArray();
+                    const list = tracks.map(t => ({ id: t.id, title: t.title, artist: t.artist, cover: t.cover }));
+                    conn.send({ type: 'track_list', list: list });
+                }
+                if (data.type === 'track_list') {
+                    renderPeerLibrary(data.list);
+                }
+                if (data.type === 'request_track') {
+                    const track = await db.tracks.get(data.trackId);
+                    if(track) {
+                        conn.send({ type: 'track_data', trackId: track.id, file: track.file, metadata: track });
+                    }
+                }
+                if (data.type === 'track_data') {
+                    // Play received track
+                    const blobUrl = URL.createObjectURL(new Blob([data.file]));
+                    currentPlaylist = [ { ...data.metadata, file: blobUrl } ];
+                    playTrack(0);
+                    window.switchTab('playing');
+                }
+                if (data.type === 'sync_color') {
+                    if(document.getElementById('setting-sync-color').selected) {
+                        window.updateTheme(data.color, false);
+                    }
+                }
+            });
+        }
+
+        function renderPeerLibrary(list) {
+            const el = document.getElementById('peer-library-list');
+            el.innerHTML = '';
+            list.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'track-item glass-card';
+                item.style.marginBottom = '4px';
+                item.style.padding = '8px 16px';
+                const coverSrc = t.cover || `data:image/svg+xml;utf8,<svg width=48 height=48><rect width=48 height=48 fill=%23ccc/></svg>`;
+                item.innerHTML = `
+                    <img src="${coverSrc}" class="track-cover-small">
+                    <div class="track-info">
+                        <div class="track-title">${escapeHTML(t.title)}</div>
+                        <div class="track-artist">${escapeHTML(t.artist)}</div>
+                    </div>
+                    <md-icon-button onclick="event.stopPropagation(); peerConn.send({type:'request_track', trackId:'${t.id}'})">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                    </md-icon-button>
+                `;
+                el.appendChild(item);
+            });
+        }
+
+        // ==========================================
+        // --- Backup & Restore (JSZip) ---
+        // ==========================================
+        window.exportBackup = async function() {
+            const zip = new JSZip();
+            const tracks = await db.tracks.toArray();
+            
+            if(tracks.length === 0) { alert("バックアップするデータがありません。"); return; }
+            
+            const metaList = [];
+            
+            for(let t of tracks) {
+                metaList.push({ id: t.id, title: t.title, artist: t.artist, album: t.album, cover: t.cover, filename: t.id + '.mp3' });
+                // Note: Extension is forced to mp3 for simplicity in this demo, though file type might vary
+                zip.file("audio/" + t.id + ".mp3", t.file);
+            }
+            zip.file("metadata.json", JSON.stringify(metaList));
+            
+            const content = await zip.generateAsync({type:"blob"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(content);
+            a.download = "DeptherMusic_Backup.zip";
+            a.click();
+        };
+
+        window.importBackup = async function(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            try {
+                const zip = await JSZip.loadAsync(file);
+                const metaStr = await zip.file("metadata.json").async("string");
+                const metaList = JSON.parse(metaStr);
+                
+                for(let m of metaList) {
+                    const audioBlob = await zip.file("audio/" + m.filename).async("blob");
+                    await db.tracks.put({
+                        id: m.id,
+                        title: m.title,
+                        artist: m.artist,
+                        album: m.album,
+                        cover: m.cover,
+                        file: audioBlob
+                    });
+                }
+                alert("リストア完了");
+                loadLibrary();
+                loadHome();
+            } catch(e) {
+                console.error(e);
+                alert("リストアに失敗しました。");
+            }
+        };
+
+        window.clearDatabase = async function() {
+            if(confirm("本当に全てのデータを削除しますか？")) {
+                await db.tracks.clear();
+                await db.playlists.clear();
+                loadLibrary();
+                loadHome();
+                alert("削除しました。");
+            }
+        }
+        
+        window.showPlaylistsDialog = function() {
+            alert("プレイリスト機能は開発中です。");
+        }
+
+    </script>
+</body>
+</html>
