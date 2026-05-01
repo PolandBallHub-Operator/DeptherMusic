@@ -12,5 +12,5 @@ This project is built with the following awesome open-source software:
 - **[Dexie.js](https://dexie.org/)** (Apache 2.0) - IndexedDB wrapper.
 - **[PeerJS](https://peerjs.com/)** (MIT) - Simple peer-to-peer with WebRTC.
 - **[JSZip](https://stuk.github.io/jszip/)** (MIT) - Create, read and edit .zip files.
-- **[jsmediatags](https://github.com/aadsm/jsmediatags)** (MIT) - Media tags reader.
+- **[jsmediatags](https://github.com/aadsm/jsmediatags)** (BSD) - Media tags reader.
 - **[QRCode.js](https://github.com/davidshimjs/qrcodejs)** (MIT) - Cross-browser QRCode generator.
